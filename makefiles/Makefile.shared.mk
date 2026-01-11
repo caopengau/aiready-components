@@ -2,7 +2,9 @@
 # Makefile.shared: Common macros, variables, and environment config for all spokes
 ###############################################################################
 
-# Common package list for all spokes
+# Dynamically discover all packages in packages/ directory
+ALL_SPOKES := $(notdir $(wildcard packages/*))
+# Legacy static list (deprecated - use ALL_SPOKES)
 PACKAGES := core pattern-detect
 .ONESHELL:
 

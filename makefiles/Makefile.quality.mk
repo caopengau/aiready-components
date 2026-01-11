@@ -11,9 +11,10 @@ include makefiles/Makefile.shared.mk
 	format-check format-check-core format-check-pattern-detect \
 	type-check type-check-core type-check-pattern-detect type-check-all
 
-FORMAT_LEAF := format-check-core format-check-pattern-detect
-LINT_LEAF := lint-core lint-pattern-detect
-TYPE_LEAF := type-check-core type-check-pattern-detect
+# Dynamically generate leaf targets from ALL_SPOKES
+FORMAT_LEAF := $(foreach spoke,$(ALL_SPOKES),format-check-$(spoke))
+LINT_LEAF := $(foreach spoke,$(ALL_SPOKES),lint-$(spoke))
+TYPE_LEAF := $(foreach spoke,$(ALL_SPOKES),type-check-$(spoke))
 
 # Combined quality checks
 check-all: ## Run format-check, lint, and type-check across the repo

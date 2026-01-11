@@ -6,7 +6,7 @@ include makefiles/Makefile.shared.mk
 .PHONY: publish npm-publish npm-login npm-check npm-publish-all \
         version-patch version-minor version-major release-patch release-minor \
         publish-core publish-pattern-detect npm-publish-core npm-publish-pattern-detect \
-        pull sync-from-spoke
+        pull sync-from-spoke push-all deploy
 
 # Default owner for GitHub repos
 OWNER ?= caopengau
@@ -122,5 +122,20 @@ sync-from-spoke: ## Sync changes from spoke repo back to monorepo. Usage: make s
 	$(call log_success,Synced changes from aiready-$(SPOKE))
 
 pull: ## Alias for sync-from-spoke. Usage: make pull SPOKE=pattern-detect
-	@$(MAKE) sync-from-spoke SPOKE=$(SPOKE)-pattern-detect ## Build and publish all packages to npm
+	@$(MAKE) sync-from-spoke SPOKE=$(SPOKE)
+
+# Push to monorepo and all spoke repos
+push-all: ## Push monorepo to origin and sync all spokes to their public repos
+	@$(call log_step,Pushing to monorepo...)
+	@git push origin $(TARGET_BRANCH)
+	@$(call log_success,Pushed to monorepo)
+	@$(call log_step,Publishing all spokes to GitHub...)
+	@for spoke in $(ALL_SPOKES); do \
+		$(call log_info,Publishing $$spoke...); \
+		$(MAKE) publish SPOKE=$$spoke OWNER=$(OWNER); \
+	done
+	@$(call log_success,All spokes published)
+
+deploy: push-all ## Alias for push-all (push monorepo + publish all spokes)
+	@:-pattern-detect ## Build and publish all packages to npm
 	@$(call log_success,All packages published to npm)
