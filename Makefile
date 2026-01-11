@@ -4,6 +4,7 @@ include makefiles/Makefile.quality.mk
 include makefiles/Makefile.setup.mk
 include makefiles/Makefile.build.mk
 include makefiles/Makefile.test.mk
+include makefiles/Makefile.publish.mk
 
 # Dynamically resolve pnpm path for use in all commands
 PNPM := $(shell command -v pnpm)
