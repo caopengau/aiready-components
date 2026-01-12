@@ -1,35 +1,29 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
-    ":preserveSemverRanges",
-    ":semanticCommitTypeAll(chore)"
+    "config:recommended",
+    ":preserveSemverRanges"
   ],
   "packageRules": [
     {
       "matchPackagePatterns": ["*"],
       "groupName": "all dependencies",
-      "groupSlug": "all",
-      "enabled": true
+      "groupSlug": "all"
     }
   ],
-  "rangeStrategy": "bump",
-  "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": ["before 4am every day"]
-  },
+  "schedule": ["at any time"],
   "timezone": "Australia/Sydney",
+  "rangeStrategy": "bump",
+  "semanticCommits": "enabled",
+  "commitMessagePrefix": "chore:",
   "labels": ["dependencies"],
   "assignees": ["caopengau"],
-  "minimumReleaseAge": "3 days",
-  "stabilityDays": 3,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 4am"]
+  },
   "vulnerabilityAlerts": {
     "enabled": true,
-    "labels": ["security"],
-    "assignees": ["caopengau"]
-  },
-  "pnpm": {
-    "enabled": true
-  },
-  "ignoreDeps": []
+    "labels": ["security"]
+  }
 }
