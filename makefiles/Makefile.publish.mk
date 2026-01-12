@@ -1,5 +1,11 @@
 ###############################################################################
 # Makefile.publish: Publishing spokes to GitHub and npm
+#
+# IMPORTANT: Always use 'pnpm publish' (not 'npm publish')
+# - workspace:* protocol in package.json is pnpm-specific
+# - pnpm publish auto-converts workspace:* to actual versions
+# - npm publish fails with EUNSUPPORTEDPROTOCOL error
+# See PUBLISHING.md for details
 ###############################################################################
 include makefiles/Makefile.shared.mk
 
@@ -57,6 +63,7 @@ version-major: ## Bump spoke major version (0.1.0 -> 1.0.0). Usage: make version
 npm-publish: npm-check ## Publish spoke to npm. Usage: make npm-publish SPOKE=pattern-detect [OTP=123456]
 	$(call require_spoke)
 	@$(call log_step,Publishing @aiready/$(SPOKE) to npm...)
+@# CRITICAL: Use pnpm publish (not npm) to resolve workspace:* dependencies
 	@OTP_FLAG=""; [ -n "$(OTP)" ] && OTP_FLAG="--otp $(OTP)"; \
 	cd packages/$(SPOKE) && pnpm publish --access public --no-git-checks $$OTP_FLAG
 	@$(call log_success,Published @aiready/$(SPOKE) to npm)
