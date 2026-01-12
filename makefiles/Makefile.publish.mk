@@ -6,7 +6,7 @@ include makefiles/Makefile.shared.mk
 .PHONY: publish npm-publish npm-login npm-check npm-publish-all \
         version-patch version-minor version-major release-patch release-minor \
         publish-core publish-pattern-detect npm-publish-core npm-publish-pattern-detect \
-        pull sync-from-spoke push-all deploy
+        pull sync-from-spoke push-all deploy push
 
 # Default owner for GitHub repos
 OWNER ?= caopengau
@@ -124,6 +124,8 @@ sync-from-spoke: ## Sync changes from spoke repo back to monorepo. Usage: make s
 pull: ## Alias for sync-from-spoke. Usage: make pull SPOKE=pattern-detect
 	@$(MAKE) sync-from-spoke SPOKE=$(SPOKE)
 
+# alias for push-all
+push: push-all ## Alias for push-all
 # Push to monorepo and all spoke repos
 push-all: ## Push monorepo to origin and sync all spokes to their public repos
 	@$(call log_step,Pushing to monorepo...)
