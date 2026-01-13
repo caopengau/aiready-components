@@ -17,6 +17,9 @@ export type IssueType =
   | 'context-fragmentation'
   | 'doc-drift'
   | 'naming-inconsistency'
+    | 'naming-quality'
+    | 'pattern-inconsistency'
+    | 'architecture-inconsistency'
   | 'dead-code'
   | 'circular-dependency'
   | 'missing-types';

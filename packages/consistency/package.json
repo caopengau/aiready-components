@@ -1,12 +1,12 @@
 {
-  "name": "@aiready/context-analyzer",
-  "version": "0.3.8",
-  "description": "AI context window cost analysis - detect fragmented code, deep import chains, and expensive context budgets",
+  "name": "@aiready/consistency",
+  "version": "0.1.0",
+  "description": "Detects consistency issues in naming, patterns, and architecture that confuse AI models",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "bin": {
-    "aiready-context": "./dist/cli.js"
+    "aiready-consistency": "./dist/cli.js"
   },
   "exports": {
     ".": {
@@ -26,13 +26,9 @@
   },
   "keywords": [
     "aiready",
-    "context-analysis",
-    "ai-context",
-    "token-cost",
-    "fragmentation",
-    "dependency-analysis",
-    "import-depth",
-    "cohesion",
+    "consistency",
+    "naming-conventions",
+    "code-patterns",
     "code-quality",
     "ai-code",
     "tech-debt",
@@ -41,33 +37,26 @@
     "chatgpt",
     "claude",
     "ai-assisted-development",
-    "context-window",
-    "token-optimization"
+    "architecture",
+    "best-practices"
   ],
   "author": "AIReady Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/caopengau/aiready.git",
-    "directory": "packages/context-analyzer"
+    "url": "https://github.com/caopengau/aiready-consistency.git"
   },
-  "homepage": "https://github.com/caopengau/aiready/tree/main/packages/context-analyzer",
-  "bugs": {
-    "url": "https://github.com/caopengau/aiready/issues"
-  },
+  "homepage": "https://github.com/caopengau/aiready-consistency",
   "dependencies": {
     "@aiready/core": "workspace:*",
-    "commander": "^12.1.0",
     "chalk": "^5.3.0",
-    "prompts": "^2.4.2"
+    "commander": "^12.1.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "@types/prompts": "^2.4.9",
+    "@types/node": "^22.10.5",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.3",
-    "vitest": "^2.1.9",
-    "eslint": "^9.18.0"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   },
   "engines": {
     "node": ">=18.0.0"

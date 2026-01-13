@@ -14,6 +14,7 @@ const DEFAULT_EXCLUDE = [
   '**/target/**',
   '**/bin/**',
   '**/obj/**',
+  '**/cdk.out/**',
 
   // Framework-specific build dirs
   '**/.next/**',
