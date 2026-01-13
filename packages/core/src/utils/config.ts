@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from 'fs';
-import { join, resolve } from 'path';
+import { join, resolve, dirname } from 'path';
 import type { AIReadyConfig } from '../types';
 
 const CONFIG_FILES = [
@@ -12,33 +12,44 @@ const CONFIG_FILES = [
 ];
 
 export function loadConfig(rootDir: string): AIReadyConfig | null {
-  for (const configFile of CONFIG_FILES) {
-    const configPath = resolve(rootDir, configFile);
+  // Search upwards from the provided directory to find the nearest config
+  let currentDir = resolve(rootDir);
 
-    if (existsSync(configPath)) {
-      try {
-        let config: AIReadyConfig;
+  while (true) {
+    for (const configFile of CONFIG_FILES) {
+      const configPath = join(currentDir, configFile);
 
-        if (configFile.endsWith('.js')) {
-          // For JS files, require them
-          delete require.cache[require.resolve(configPath)]; // Clear cache
-          config = require(configPath);
-        } else {
-          // For JSON files, parse them
-          const content = readFileSync(configPath, 'utf-8');
-          config = JSON.parse(content);
+      if (existsSync(configPath)) {
+        try {
+          let config: AIReadyConfig;
+
+          if (configFile.endsWith('.js')) {
+            // For JS files, require them
+            delete require.cache[require.resolve(configPath)]; // Clear cache
+            config = require(configPath);
+          } else {
+            // For JSON files, parse them
+            const content = readFileSync(configPath, 'utf-8');
+            config = JSON.parse(content);
+          }
+
+          // Basic validation
+          if (typeof config !== 'object' || config === null) {
+            throw new Error('Config must be an object');
+          }
+
+          return config;
+        } catch (error) {
+          throw new Error(`Failed to load config from ${configPath}: ${error}`);
         }
-
-        // Basic validation
-        if (typeof config !== 'object' || config === null) {
-          throw new Error('Config must be an object');
-        }
-
-        return config;
-      } catch (error) {
-        throw new Error(`Failed to load config from ${configPath}: ${error}`);
       }
     }
+
+    const parent = dirname(currentDir);
+    if (parent === currentDir) {
+      break; // Reached filesystem root
+    }
+    currentDir = parent;
   }
 
   return null;
