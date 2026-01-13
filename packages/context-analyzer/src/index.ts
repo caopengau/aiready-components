@@ -100,11 +100,15 @@ export async function analyzeContext(
   } = options;
 
   // Scan files
+  // Note: scanFiles now automatically merges user excludes with DEFAULT_EXCLUDE
   const files = await scanFiles({
     ...scanOptions,
-    exclude: includeNodeModules
-      ? scanOptions.exclude
-      : [...(scanOptions.exclude || []), '**/node_modules/**'],
+    // Only add node_modules to exclude if includeNodeModules is false
+    // The DEFAULT_EXCLUDE already includes node_modules, so this is only needed
+    // if user overrides the default exclude list
+    exclude: includeNodeModules && scanOptions.exclude
+      ? scanOptions.exclude.filter(pattern => pattern !== '**/node_modules/**')
+      : scanOptions.exclude,
   });
 
   // Read all file contents

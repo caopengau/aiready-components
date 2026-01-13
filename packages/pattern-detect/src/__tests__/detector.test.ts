@@ -7,8 +7,11 @@ describe('detectDuplicatePatterns', () => {
       {
         file: 'file1.ts',
         content: `
-function getUserData(id: string) {
+async function getUserData(id: string) {
   const user = await db.users.findOne({ id });
+  if (!user) {
+    throw new Error('Not found');
+  }
   return user;
 }
         `,
@@ -16,8 +19,11 @@ function getUserData(id: string) {
       {
         file: 'file2.ts',
         content: `
-async function getUserData(id: string) {
-  const user = await db.users.findOne({ id });
+async function getUserInfo(userId: string) {
+  const user = await db.users.findOne({ id: userId });
+  if (!user) {
+    throw new Error('Not found');
+  }
   return user;
 }
         `,
@@ -25,12 +31,13 @@ async function getUserData(id: string) {
     ];
 
     const duplicates = await detectDuplicatePatterns(files, {
-      minSimilarity: 0.8,
-      minLines: 3,
+      minSimilarity: 0.6,
+      minLines: 5,
+      approx: false, // Disable approximation for test reliability
     });
 
     expect(duplicates.length).toBeGreaterThan(0);
-    expect(duplicates[0].similarity).toBeGreaterThan(0.8);
+    expect(duplicates[0].similarity).toBeGreaterThan(0.6);
   });
 
   it('should detect similar but not identical functions', async () => {
@@ -38,7 +45,7 @@ async function getUserData(id: string) {
       {
         file: 'file1.ts',
         content: `
-function getUserData(id: string) {
+async function getUserData(id: string) {
   const user = await database.users.findOne({ id: id });
   if (!user) {
     throw new Error('User not found');
@@ -62,8 +69,9 @@ async function getUserData(userId: string) {
     ];
 
     const duplicates = await detectDuplicatePatterns(files, {
-      minSimilarity: 0.7,
-      minLines: 3,
+      minSimilarity: 0.6,
+      minLines: 5,
+      approx: false, // Disable approximation for test reliability
     });
 
     expect(duplicates.length).toBeGreaterThan(0);

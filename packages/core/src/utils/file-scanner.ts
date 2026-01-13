@@ -2,7 +2,7 @@ import { glob } from 'glob';
 import { readFile } from 'fs/promises';
 import { ScanOptions } from '../types';
 
-const DEFAULT_EXCLUDE = [
+export const DEFAULT_EXCLUDE = [
   // Dependencies
   '**/node_modules/**',
 
@@ -53,12 +53,18 @@ export async function scanFiles(options: ScanOptions): Promise<string[]> {
   const {
     rootDir,
     include = ['**/*.{ts,tsx,js,jsx,py,java}'],
-    exclude = DEFAULT_EXCLUDE,
+    exclude,
   } = options;
+
+  // Always merge user excludes with defaults to ensure critical paths like
+  // cdk.out, node_modules, build dirs are excluded
+  const finalExclude = exclude 
+    ? [...new Set([...DEFAULT_EXCLUDE, ...exclude])] 
+    : DEFAULT_EXCLUDE;
 
   const files = await glob(include, {
     cwd: rootDir,
-    ignore: exclude,
+    ignore: finalExclude,
     absolute: true,
   });
 

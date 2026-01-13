@@ -109,6 +109,12 @@ release-one: ## Release one spoke: TYPE=patch|minor|major, SPOKE=core|pattern-de
 	$(call log_step,Building workspace...); \
 	$(MAKE) -C $(ROOT_DIR) build; \
 	$(call log_success,Build complete); \
+	$(call log_step,Running tests...); \
+	if ! $(MAKE) -C $(ROOT_DIR) test; then \
+		$(call log_error,Tests failed for @aiready/$(SPOKE). Aborting release.); \
+		exit 1; \
+	fi; \
+	$(call log_success,Tests passed); \
 	$(call log_step,Publishing @aiready/$(SPOKE) to npm...); \
 	if ! $(MAKE) -C $(ROOT_DIR) npm-publish SPOKE=$(SPOKE) OTP=$(OTP); then \
 		$(call log_error,NPM publish failed for @aiready/$(SPOKE). Aborting release.); \
@@ -126,6 +132,12 @@ release-all: ## Release all spokes: TYPE=patch|minor|major [OTP=123456] [FORCE=1
 		$(call log_error,TYPE parameter required. Example: make $@ TYPE=minor); \
 		exit 1; \
 	fi
+	@$(call log_step,Running full test suite before release...); \
+	if ! $(MAKE) -C $(ROOT_DIR) test; then \
+		$(call log_error,Tests failed. Aborting release-all.); \
+		exit 1; \
+	fi; \
+	$(call log_success,All tests passed)
 	@for spoke in $(RELEASE_ORDER); do \
 		$(call log_info,Releasing @aiready/$$spoke ($(TYPE))); \
 		$(MAKE) -f $(MAKEFILE_DIR)/Makefile.release.mk release-one SPOKE=$$spoke TYPE=$(TYPE) OTP=$(OTP) FORCE=$(FORCE) || exit 1; \

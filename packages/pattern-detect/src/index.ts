@@ -80,17 +80,12 @@ async function getSmartDefaults(directory: string, userOptions: Partial<PatternD
   }
 
   // Quick size estimation by scanning files first
+  // Note: scanFiles automatically merges with DEFAULT_EXCLUDE, so we only
+  // need to pass user-provided excludes
   const scanOptions = {
     rootDir: directory,
     include: userOptions.include || ['**/*.{ts,tsx,js,jsx,py,java}'],
-    exclude: userOptions.exclude || [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/build/**',
-      '**/coverage/**',
-      '**/.git/**',
-      '**/.turbo/**'
-    ],
+    exclude: userOptions.exclude,
   };
 
   // Estimate size by doing a quick file scan and counting potential blocks

@@ -3,7 +3,11 @@ import { analyzeUnified } from '../index';
 
 // Mock the individual tools
 vi.mock('@aiready/pattern-detect', () => ({
-  analyzePatterns: vi.fn().mockResolvedValue([]),
+  analyzePatterns: vi.fn().mockResolvedValue({
+    results: [],
+    duplicates: [],
+    files: [],
+  }),
   generateSummary: vi.fn().mockReturnValue({
     totalDuplicateLines: 0,
     potentialSavings: 0,
