@@ -62,7 +62,78 @@ aiready patterns ./src --min-lines 3
 aiready patterns ./src --output json --output-file report.json
 ```
 
-## 🔗 Related Tools
+## 🎛️ Tuning Guide
+
+### Main Parameters
+
+| Parameter | Default | Effect | Use When |
+|-----------|---------|--------|----------|
+| `--similarity` | `0.4` | Similarity threshold (0-1) | Want more/less sensitive detection |
+| `--min-lines` | `5` | Minimum lines per pattern | Include/exclude small functions |
+| `--min-shared-tokens` | `8` | Tokens that must match | Control comparison strictness |
+
+### Quick Tuning Scenarios
+
+**Want more results?** (catch subtle duplicates)
+```bash
+# Lower similarity threshold
+aiready patterns ./src --similarity 0.3
+
+# Include smaller functions  
+aiready patterns ./src --min-lines 3
+
+# Both together
+aiready patterns ./src --similarity 0.3 --min-lines 3
+```
+
+**Want fewer but higher quality results?** (focus on obvious duplicates)
+```bash
+# Higher similarity threshold
+aiready patterns ./src --similarity 0.8
+
+# Larger patterns only
+aiready patterns ./src --min-lines 10
+```
+
+**Analysis too slow?** (optimize for speed)
+```bash
+# Focus on substantial functions
+aiready patterns ./src --min-lines 10
+
+# Reduce comparison candidates
+aiready patterns ./src --min-shared-tokens 12
+```
+
+### Parameter Tradeoffs
+
+| Adjustment | More Results | Faster | Higher Quality | Tradeoff |
+|------------|--------------|--------|----------------|----------|
+| Lower `--similarity` | ✅ | ❌ | ❌ | More false positives |
+| Lower `--min-lines` | ✅ | ❌ | ❌ | Includes trivial duplicates |
+| Higher `--similarity` | ❌ | ✅ | ✅ | Misses subtle duplicates |
+| Higher `--min-lines` | ❌ | ✅ | ✅ | Misses small but important patterns |
+
+### Common Workflows
+
+**First run** (broad discovery):
+```bash
+aiready patterns ./src  # Default settings
+```
+
+**Focus on critical issues** (production ready):
+```bash
+aiready patterns ./src --similarity 0.8 --min-lines 8
+```
+
+**Catch everything** (comprehensive audit):
+```bash
+aiready patterns ./src --similarity 0.3 --min-lines 3
+```
+
+**Performance optimization** (large codebases):
+```bash
+aiready patterns ./src --min-lines 10 --min-shared-tokens 10
+```
 
 **Use the unified CLI** for all AIReady tools:
 
