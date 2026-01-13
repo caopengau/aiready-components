@@ -136,7 +136,7 @@ CREATE TABLE repositories (
 CREATE TABLE analysis_runs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   repository_id UUID REFERENCES repositories(id) ON DELETE CASCADE,
-  tool VARCHAR(50) NOT NULL, -- 'pattern-detect', 'context-analyzer'
+  tool VARCHAR(50) NOT NULL, -- 'pattern-detect', 'context-analyzer', 'consistency'
   version VARCHAR(20) NOT NULL, -- CLI tool version
   commit_sha VARCHAR(40),
   branch VARCHAR(255),
@@ -192,6 +192,45 @@ CREATE TABLE context_metrics (
   
   -- Circular dependencies
   circular_dependency_count INT,
+  
+  INDEX idx_analysis_timestamp (analysis_run_id, timestamp)
+);
+
+-- Consistency metrics (timeseries)
+CREATE TABLE consistency_metrics (
+  id BIGSERIAL PRIMARY KEY,
+  analysis_run_id UUID REFERENCES analysis_runs(id) ON DELETE CASCADE,
+  timestamp TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Summary metrics
+  total_files INT NOT NULL,
+  total_issues INT NOT NULL,
+  consistency_score DECIMAL(3,2), -- 0-1 scale
+  
+  -- Issue breakdown
+  naming_issues INT NOT NULL,
+  pattern_issues INT NOT NULL,
+  architecture_issues INT DEFAULT 0,
+  
+  -- Severity distribution
+  critical_count INT DEFAULT 0,
+  major_count INT DEFAULT 0,
+  minor_count INT DEFAULT 0,
+  info_count INT DEFAULT 0,
+  
+  -- Issue type details
+  naming_convention_violations INT DEFAULT 0, -- snake_case in JS/TS
+  poor_naming_count INT DEFAULT 0, -- single letters, unclear
+  unclear_booleans INT DEFAULT 0, -- missing is/has/can
+  unclear_functions INT DEFAULT 0, -- missing action verbs
+  
+  -- Pattern inconsistencies
+  error_handling_inconsistencies INT DEFAULT 0,
+  async_pattern_inconsistencies INT DEFAULT 0,
+  import_style_inconsistencies INT DEFAULT 0,
+  
+  -- Top issues (JSON array)
+  top_issues JSONB,
   
   INDEX idx_analysis_timestamp (analysis_run_id, timestamp)
 );
@@ -263,10 +302,12 @@ CREATE EXTENSION IF NOT EXISTS timescaledb;
 -- Convert to hypertables for efficient time-series queries
 SELECT create_hypertable('pattern_metrics', 'timestamp');
 SELECT create_hypertable('context_metrics', 'timestamp');
+SELECT create_hypertable('consistency_metrics', 'timestamp');
 
 -- Retention policy: keep detailed data for 90 days
 SELECT add_retention_policy('pattern_metrics', INTERVAL '90 days');
 SELECT add_retention_policy('context_metrics', INTERVAL '90 days');
+SELECT add_retention_policy('consistency_metrics', INTERVAL '90 days');
 
 -- Continuous aggregates for dashboards (pre-computed views)
 CREATE MATERIALIZED VIEW daily_pattern_summary
@@ -346,7 +387,7 @@ Content-Type: application/json
 
 Request Body:
 {
-  "tool": "pattern-detect",
+  "tool": "pattern-detect" | "context-analyzer" | "consistency",
   "version": "0.8.1",
   "repository": "owner/repo",
   "commit": "abc123",
@@ -390,6 +431,43 @@ Response:
     "avgPatterns": 21.5,
     "trend": "decreasing", // or "increasing", "stable"
     "changePercent": -8.5
+  }
+}
+
+// Consistency metrics
+GET /api/repos/:repoId/metrics?tool=consistency&from=2026-01-01&to=2026-01-14
+Authorization: Bearer <jwt>
+
+Response:
+{
+  "data": [
+    {
+      "timestamp": "2026-01-01T00:00:00Z",
+      "totalIssues": 45,
+      "consistencyScore": 0.82,
+      "namingIssues": 26,
+      "patternIssues": 15,
+      "architectureIssues": 4,
+      "bySeverity": {
+        "critical": 2,
+        "major": 8,
+        "minor": 20,
+        "info": 15
+      },
+      "topIssueTypes": {
+        "snake_case_violations": 12,
+        "poor_naming": 8,
+        "error_handling_mix": 5,
+        "async_pattern_mix": 3
+      }
+    },
+    // ... more data points
+  ],
+  "summary": {
+    "avgIssues": 42.5,
+    "avgConsistencyScore": 0.84,
+    "trend": "improving", // or "degrading", "stable"
+    "changePercent": -6.7 // negative = fewer issues (good)
   }
 }
 ```
@@ -581,7 +659,7 @@ Total: $14,800 MRR = $177,600 ARR
 ┌────────────────────────────────────────────────────────────┐
 │ ← Back to Repos     owner/repo-name     [Settings]  [Share]│
 ├────────────────────────────────────────────────────────────┤
-│  [Overview] [Patterns] [Context] [Recommendations] [CI/CD] │
+│  [Overview] [Patterns] [Context] [Consistency] [Recs] [CI] │
 ├────────────────────────────────────────────────────────────┤
 │                                                              │
 │  Pattern Detection                          Last run: 2h ago│
@@ -607,6 +685,65 @@ Total: $14,800 MRR = $177,600 ARR
 │  │ Validator  │   8   │ 78%  🟠  │  2,100   │             │
 │  │ Utility    │   3   │ 65%  🟡  │    900   │             │
 │  └────────────┴───────┴───────────┴──────────┘             │
+│                                                              │
+│  [View Detailed Report →]  [Run New Analysis]               │
+│                                                              │
+└────────────────────────────────────────────────────────────┘
+```
+
+### Consistency Analysis View
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ ← Back to Repos     owner/repo-name     [Settings]  [Share]│
+├────────────────────────────────────────────────────────────┤
+│  [Overview] [Patterns] [Context] [Consistency] [Recs] [CI] │
+├────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Consistency Score: 87%                    Last run: 3h ago │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  📈 Score Trend (30 days)                           │   │
+│  │     │                                                │   │
+│  │ 100 │                       • • •                    │   │
+│  │  90 │             • • •   •                          │   │
+│  │  80 │       • •                                      │   │
+│  │  70 │   • •                                          │   │
+│  │     └────────────────────────────────────────        │   │
+│  │      Jan 1      Jan 7      Jan 14     Jan 21        │   │
+│  │                                                       │   │
+│  │  Current: 87% (+9% vs last week) ✅                  │   │
+│  │  Total issues: 42 (-15 vs last week)                │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                              │
+│  Issue Breakdown by Category                                │
+│  ┌──────────────────┬───────┬─────────┬──────────┐         │
+│  │ Category         │ Count │ Trend   │ Severity │         │
+│  ├──────────────────┼───────┼─────────┼──────────┤         │
+│  │ Naming Quality   │  24   │ ↓ -8    │ 🔴3 🟠21 │         │
+│  │ Pattern Inconsist│  15   │ ↓ -5    │ 🔴0 🟠12 │         │
+│  │ Architecture     │   3   │ ↓ -2    │ 🔴1 🟠2  │         │
+│  └──────────────────┴───────┴─────────┴──────────┘         │
+│                                                              │
+│  Top Issues Needing Attention                               │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 🔴 Critical: Mixed error handling patterns          │   │
+│  │    src/api/auth.ts, src/api/users.ts (8 files)     │   │
+│  │    [View Details →]                                 │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │ 🟠 Major: Single-letter variable names             │   │
+│  │    src/utils/parser.ts:42, 58, 91 (12 instances)   │   │
+│  │    [View Details →]                                 │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │ 🟠 Major: Unclear boolean names                     │   │
+│  │    src/models/user.ts:15 (7 instances)             │   │
+│  │    [View Details →]                                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                              │
+│  Consistency Patterns Detected                              │
+│  ✅ Error handling: try-catch used in 85% of async code    │
+│  ✅ Import style: ES modules used consistently              │
+│  ⚠️  Naming: Mixed camelCase/snake_case in 12% of files    │
+│  ⚠️  Async patterns: Callbacks still used in legacy code   │
 │                                                              │
 │  [View Detailed Report →]  [Run New Analysis]               │
 │                                                              │
