@@ -5,7 +5,7 @@ import { analyzeUnified, generateUnifiedSummary } from './index';
 import chalk from 'chalk';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import { loadConfig, mergeConfigWithDefaults } from '@aiready/core';
+import { loadMergedConfig, handleJSONOutput, handleCLIError, getElapsedTime } from '@aiready/core';
 import { readFileSync } from 'fs';
 
 const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
@@ -33,9 +33,6 @@ program
     const startTime = Date.now();
 
     try {
-      // Load config file if it exists
-      const config = loadConfig(directory);
-
       // Define defaults
       const defaults = {
         tools: ['patterns', 'context'],
@@ -47,23 +44,19 @@ program
         },
       };
 
-      // Merge config with defaults
-      const mergedConfig = mergeConfigWithDefaults(config, defaults);
-
-      // Override with CLI options (CLI takes precedence)
-      const finalOptions = {
-        rootDir: directory,
-        tools: options.tools ? options.tools.split(',').map((t: string) => t.trim()) as ('patterns' | 'context')[] : mergedConfig.tools,
-        include: options.include?.split(',') || mergedConfig.include,
-        exclude: options.exclude?.split(',') || mergedConfig.exclude,
-      };
+      // Load and merge config with CLI options
+      const finalOptions = loadMergedConfig(directory, defaults, {
+        tools: options.tools ? options.tools.split(',').map((t: string) => t.trim()) as ('patterns' | 'context')[] : undefined,
+        include: options.include?.split(','),
+        exclude: options.exclude?.split(','),
+      }) as any;
 
       const results = await analyzeUnified(finalOptions);
 
-      const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      const elapsedTime = getElapsedTime(startTime);
 
-      const outputFormat = options.output || mergedConfig.output?.format || 'console';
-      const outputFile = options.outputFile || mergedConfig.output?.file;
+      const outputFormat = options.output || finalOptions.output?.format || 'console';
+      const outputFile = options.outputFile || finalOptions.output?.file;
 
       if (outputFormat === 'json') {
         const outputData = {
@@ -74,19 +67,13 @@ program
           },
         };
 
-        if (outputFile) {
-          writeFileSync(outputFile, JSON.stringify(outputData, null, 2));
-          console.log(chalk.green(`✅ Results saved to ${outputFile}`));
-        } else {
-          console.log(JSON.stringify(outputData, null, 2));
-        }
+        handleJSONOutput(outputData, outputFile, `✅ Results saved to ${outputFile}`);
       } else {
         // Console output
         console.log(generateUnifiedSummary(results));
       }
     } catch (error) {
-      console.error(chalk.red('❌ Analysis failed:'), error);
-      process.exit(1);
+      handleCLIError(error, 'Analysis');
     }
   });
 
@@ -107,9 +94,6 @@ program
     const startTime = Date.now();
 
     try {
-      // Load config file if it exists
-      const config = loadConfig(directory);
-
       // Define defaults
       const defaults = {
         minSimilarity: 0.4,
@@ -122,27 +106,23 @@ program
         },
       };
 
-      // Merge config with defaults
-      const mergedConfig = mergeConfigWithDefaults(config, defaults);
-
-      // Override with CLI options (CLI takes precedence)
-      const finalOptions = {
-        rootDir: directory,
-        minSimilarity: options.similarity ? parseFloat(options.similarity) : mergedConfig.minSimilarity,
-        minLines: options.minLines ? parseInt(options.minLines) : mergedConfig.minLines,
-        include: options.include?.split(',') || mergedConfig.include,
-        exclude: options.exclude?.split(',') || mergedConfig.exclude,
-      };
+      // Load and merge config with CLI options
+      const finalOptions = loadMergedConfig(directory, defaults, {
+        minSimilarity: options.similarity ? parseFloat(options.similarity) : undefined,
+        minLines: options.minLines ? parseInt(options.minLines) : undefined,
+        include: options.include?.split(','),
+        exclude: options.exclude?.split(','),
+      });
 
       const { analyzePatterns, generateSummary } = await import('@aiready/pattern-detect');
 
       const { results } = await analyzePatterns(finalOptions);
 
-      const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      const elapsedTime = getElapsedTime(startTime);
       const summary = generateSummary(results);
 
-      const outputFormat = options.output || mergedConfig.output?.format || 'console';
-      const outputFile = options.outputFile || mergedConfig.output?.file;
+      const outputFormat = options.output || finalOptions.output?.format || 'console';
+      const outputFile = options.outputFile || finalOptions.output?.file;
 
       if (outputFormat === 'json') {
         const outputData = {
@@ -150,20 +130,14 @@ program
           summary: { ...summary, executionTime: parseFloat(elapsedTime) },
         };
 
-        if (outputFile) {
-          writeFileSync(outputFile, JSON.stringify(outputData, null, 2));
-          console.log(chalk.green(`✅ Results saved to ${outputFile}`));
-        } else {
-          console.log(JSON.stringify(outputData, null, 2));
-        }
+        handleJSONOutput(outputData, outputFile, `✅ Results saved to ${outputFile}`);
       } else {
         console.log(`Pattern Analysis Complete (${elapsedTime}s)`);
         console.log(`Found ${summary.totalPatterns} duplicate patterns`);
         console.log(`Total token cost: ${summary.totalTokenCost} tokens`);
       }
     } catch (error) {
-      console.error(chalk.red('❌ Pattern analysis failed:'), error);
-      process.exit(1);
+      handleCLIError(error, 'Pattern analysis');
     }
   });
 
@@ -183,9 +157,6 @@ program
     const startTime = Date.now();
 
     try {
-      // Load config file if it exists
-      const config = loadConfig(directory);
-
       // Define defaults
       const defaults = {
         maxDepth: 5,
@@ -198,27 +169,23 @@ program
         },
       };
 
-      // Merge config with defaults
-      const mergedConfig = mergeConfigWithDefaults(config, defaults);
-
-      // Override with CLI options (CLI takes precedence)
-      const finalOptions = {
-        rootDir: directory,
-        maxDepth: options.maxDepth ? parseInt(options.maxDepth) : mergedConfig.maxDepth,
-        maxContextBudget: options.maxContext ? parseInt(options.maxContext) : mergedConfig.maxContextBudget,
-        include: options.include?.split(',') || mergedConfig.include,
-        exclude: options.exclude?.split(',') || mergedConfig.exclude,
-      };
+      // Load and merge config with CLI options
+      const finalOptions = loadMergedConfig(directory, defaults, {
+        maxDepth: options.maxDepth ? parseInt(options.maxDepth) : undefined,
+        maxContextBudget: options.maxContext ? parseInt(options.maxContext) : undefined,
+        include: options.include?.split(','),
+        exclude: options.exclude?.split(','),
+      });
 
       const { analyzeContext, generateSummary } = await import('@aiready/context-analyzer');
 
       const results = await analyzeContext(finalOptions);
 
-      const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      const elapsedTime = getElapsedTime(startTime);
       const summary = generateSummary(results);
 
-      const outputFormat = options.output || mergedConfig.output?.format || 'console';
-      const outputFile = options.outputFile || mergedConfig.output?.file;
+      const outputFormat = options.output || finalOptions.output?.format || 'console';
+      const outputFile = options.outputFile || finalOptions.output?.file;
 
       if (outputFormat === 'json') {
         const outputData = {
@@ -226,12 +193,7 @@ program
           summary: { ...summary, executionTime: parseFloat(elapsedTime) },
         };
 
-        if (outputFile) {
-          writeFileSync(outputFile, JSON.stringify(outputData, null, 2));
-          console.log(chalk.green(`✅ Results saved to ${outputFile}`));
-        } else {
-          console.log(JSON.stringify(outputData, null, 2));
-        }
+        handleJSONOutput(outputData, outputFile, `✅ Results saved to ${outputFile}`);
       } else {
         console.log(`Context Analysis Complete (${elapsedTime}s)`);
         console.log(`Files analyzed: ${summary.totalFiles}`);
@@ -240,8 +202,7 @@ program
         console.log(`Average fragmentation: ${(summary.avgFragmentation * 100).toFixed(1)}%`);
       }
     } catch (error) {
-      console.error(chalk.red('❌ Context analysis failed:'), error);
-      process.exit(1);
+      handleCLIError(error, 'Context analysis');
     }
   });
 
