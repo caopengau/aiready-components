@@ -102,14 +102,12 @@ release-one: ## Release one spoke: TYPE=patch|minor|major, SPOKE=core|pattern-de
 		$(call log_error,Invalid TYPE '$(TYPE)'. Expected patch|minor|major); \
 		exit 1; \
 	fi; \
-	$(call log_step,Bumping version for @aiready/$(SPOKE) ($(TYPE))...); \
 	$(MAKE) -C $(ROOT_DIR) $$bump_target SPOKE=$(SPOKE); \
 	$(call log_success,Version bump complete for @aiready/$(SPOKE)); \
 	$(call commit_and_tag); \
 	$(call log_step,Building workspace...); \
 	$(MAKE) -C $(ROOT_DIR) build; \
 	$(call log_success,Build complete); \
-	$(call log_step,Running tests...); \
 	if ! $(MAKE) -C $(ROOT_DIR) test; then \
 		$(call log_error,Tests failed for @aiready/$(SPOKE). Aborting release.); \
 		exit 1; \
