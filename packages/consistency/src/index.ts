@@ -1,5 +1,6 @@
 export { analyzeConsistency } from './analyzer';
-export { analyzeNaming, detectNamingConventions } from './analyzers/naming';
+export { analyzeNamingAST } from './analyzers/naming-ast';
+export { analyzeNaming, detectNamingConventions } from './analyzers/naming'; // Legacy regex version
 export { analyzePatterns } from './analyzers/patterns';
 export type {
   ConsistencyOptions,

@@ -1,7 +1,7 @@
 import { scanFiles } from '@aiready/core';
 import type { AnalysisResult, Issue } from '@aiready/core';
 import type { ConsistencyOptions, ConsistencyReport, ConsistencyIssue } from './types';
-import { analyzeNaming, detectNamingConventions } from './analyzers/naming';
+import { analyzeNamingAST } from './analyzers/naming-ast';
 import { analyzePatterns } from './analyzers/patterns';
 
 /**
@@ -22,7 +22,7 @@ export async function analyzeConsistency(
   const filePaths = await scanFiles(scanOptions);
 
   // Collect issues by category
-  const namingIssues = checkNaming ? await analyzeNaming(filePaths) : [];
+  const namingIssues = checkNaming ? await analyzeNamingAST(filePaths) : [];
   const patternIssues = checkPatterns ? await analyzePatterns(filePaths) : [];
 
   // Convert to AnalysisResult format
@@ -97,8 +97,8 @@ export async function analyzeConsistency(
   // Generate recommendations
   const recommendations = generateRecommendations(namingIssues, patternIssues);
 
-  // Detect naming conventions
-  const conventionAnalysis = detectNamingConventions(filePaths, namingIssues);
+  // Detect naming conventions (TODO: re-implement for AST version)
+  // const conventionAnalysis = detectNamingConventions(filePaths, namingIssues);
 
   return {
     summary: {
