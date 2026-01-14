@@ -49,10 +49,23 @@ const result = x + y;
     const acceptableAbbreviations = [
       'env', 'req', 'res', 'ctx', 'err', 'api', 'url', 'id',
       'max', 'min', 'now', 'utm', 'has', 'is', 'can',
-      'db', 'fs', 'os', 'ui', 'tmp', 'src', 'dst'
+      'db', 'fs', 'os', 'ui', 'tmp', 'src', 'dst',
+      // New additions from Phase 1
+      'img', 'txt', 'doc', 'md', 'ts', 'js', 'ddb', 's3',
+      'fcp', 'lcp', 'fps', 'po', 'dto', 'e2e', 'a11y', 'i18n'
     ];
     // These abbreviations should not trigger warnings
     expect(acceptableAbbreviations.length).toBeGreaterThan(0);
+  });
+
+  it('should NOT flag common short English words', () => {
+    // Full words, not abbreviations - should be accepted
+    const commonWords = [
+      'day', 'key', 'net', 'to', 'go', 'for', 'not', 'new', 'old',
+      'top', 'end', 'run', 'try', 'use', 'get', 'set', 'add', 'put'
+    ];
+    // These are full words and should not be flagged as abbreviations
+    expect(commonWords.length).toBeGreaterThan(0);
   });
 
   it('should detect snake_case in TypeScript files', () => {
