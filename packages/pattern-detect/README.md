@@ -6,19 +6,49 @@ Finds semantically similar but syntactically different code patterns that waste 
 
 ## 🚀 Quick Start
 
-**Recommended: Use the unified CLI** (includes pattern detection + more tools):
+**Zero config, works out of the box:**
 
 ```bash
-npm install -g @aiready/cli
-aiready patterns ./src
-```
+# Run without installation (recommended)
+npx @aiready/pattern-detect ./src
 
-**Or use this package directly:**
+# Or use the unified CLI (includes all AIReady tools)
+npx @aiready/cli scan ./src
 
-```bash
+# Or install globally for faster runs
 npm install -g @aiready/pattern-detect
 aiready-patterns ./src
 ```
+
+### 🎯 Input & Output
+
+**Input:** Path to your source code directory
+```bash
+aiready-patterns ./src
+```
+
+**Output:** Terminal report + optional JSON file (saved to `.aiready/` directory)
+```
+📊 Duplicate Pattern Analysis
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 Files analyzed: 47
+⚠️  Duplicate patterns: 12 files with 23 issues
+💰 Wasted tokens: 8,450
+
+CRITICAL (6 files)
+  src/handlers/users.ts - 4 duplicates (1,200 tokens)
+  src/handlers/posts.ts - 3 duplicates (950 tokens)
+```
+
+### ✨ Smart Defaults (Zero Config)
+
+- ✅ **Auto-excludes** test files (`**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`)
+- ✅ **Auto-excludes** build outputs (`dist/`, `build/`, `.next/`)
+- ✅ **Auto-excludes** dependencies (`node_modules/`)
+- ✅ **Adaptive threshold**: Adjusts similarity detection based on codebase size
+- ✅ **Pattern classification**: Automatically categorizes duplicates (API handlers, validators, etc.)
+
+> Override defaults with `--include-tests` or `--exclude <patterns>` as needed
 
 ## 🎯 What It Does
 

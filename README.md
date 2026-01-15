@@ -41,7 +41,12 @@ npx @aiready/context-analyzer ./src --output json
 npm install -g @aiready/pattern-detect @aiready/context-analyzer
 ```
 
-> **💡 Smart Defaults:** Both tools automatically adjust their sensitivity based on your codebase size to show ~10 most serious issues. Use threshold options to tune for more or fewer results.
+> **💡 Smart Defaults:** All tools automatically:
+> - Exclude test files, build outputs, and node_modules
+> - Adjust sensitivity based on codebase size (~10 most serious issues)
+> - Save reports to `.aiready/` directory
+> 
+> Use `--include-tests`, `--exclude`, or threshold options to customize behavior.
 
 ### Using Unified CLI
 

@@ -6,19 +6,49 @@ Helps teams maintain consistent coding practices across their codebase, making i
 
 ## 🚀 Quick Start
 
-**Recommended: Use the unified CLI** (includes consistency checking + more tools):
+**Zero config, works out of the box:**
 
 ```bash
-npm install -g @aiready/cli
-aiready consistency ./src
-```
+# Run without installation (recommended)
+npx @aiready/consistency ./src
 
-**Or use this package directly:**
+# Or use the unified CLI (includes all AIReady tools)
+npx @aiready/cli scan ./src
 
-```bash
+# Or install globally for faster runs
 npm install -g @aiready/consistency
 aiready-consistency ./src
 ```
+
+### 🎯 Input & Output
+
+**Input:** Path to your source code directory
+```bash
+aiready-consistency ./src
+```
+
+**Output:** Terminal report + optional JSON file (saved to `.aiready/` directory)
+```
+📊 Consistency Analysis
+━━━━━━━━━━━━━━━━━━━━━━━━
+📁 Files analyzed: 47
+⚠️  Issues found: 15 naming + 8 pattern issues
+
+CRITICAL (2 files)
+  src/utils/helpers.ts:12 - poor-naming: x
+  src/api/users.ts:45 - convention-mix: user_name
+```
+
+### ✨ Smart Defaults (Zero Config)
+
+- ✅ **Auto-excludes** test files (`**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`)
+- ✅ **Auto-excludes** build outputs (`dist/`, `build/`, `.next/`)
+- ✅ **Auto-excludes** dependencies (`node_modules/`)
+- ✅ **Context-aware**: Skips common iterators (i, j, k) in loops
+- ✅ **100+ built-in** acceptable abbreviations (env, api, url, ctx, etc.)
+- ✅ **Smart detection**: Recognizes arrow functions, factory patterns, callbacks
+
+> Override defaults with `--include-tests` or `--exclude <patterns>` as needed
 
 ## 🎯 What It Does
 
