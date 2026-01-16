@@ -25,19 +25,22 @@ export default $config({
       },
     });
 
-    // Deploy the Next.js site with SSR support (for Framer Motion & Recharts)
-    const site = new sst.aws.Nextjs("AireadyLanding", {
+    // Deploy as static site - animations and charts work perfectly in client-side mode
+    const site = new sst.aws.StaticSite("AireadyLanding", {
       path: "./",
+      build: {
+        command: "pnpm build",
+        output: "out",
+      },
       environment: {
         NEXT_PUBLIC_REQUEST_URL: requestApi.url,
       },
-      // Temporarily deploy without custom domain to avoid DNS conflicts
-      // domain: {
-      //   name: "getaiready.dev",
-      //   dns: sst.cloudflare.dns({
-      //     zone: "50eb7dcadc84c58ab34583742db0b671"
-      //   }),
-      // },
+      domain: {
+        name: "getaiready.dev",
+        dns: sst.cloudflare.dns({
+          zone: "50eb7dcadc84c58ab34583742db0b671",
+        }),
+      },
     });
 
     return {

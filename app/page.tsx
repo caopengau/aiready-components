@@ -44,7 +44,7 @@ export default function HomePage() {
               target="_blank"
               className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
             >
-              npm
+              NPM
             </Link>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link 
@@ -340,8 +340,8 @@ export default function HomePage() {
             </div>
             <div className="flex gap-6">
               {[
-                { href: "https://www.npmjs.com/package/@aiready/cli", label: "npm" },
-                { href: "https://github.com/caopengau/aiready-landing", label: "GitHub" },
+                { href: "https://www.npmjs.com/package/@aiready/cli", label: "NPM" },
+                { href: "https://github.com/caopengau/aiready-cli", label: "GitHub" },
                 { href: "https://twitter.com/aireadytools", label: "Twitter" },
                 { href: "/docs", label: "Documentation" },
               ].map((link, idx) => (
