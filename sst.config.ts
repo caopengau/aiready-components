@@ -17,7 +17,10 @@ export default $config({
     // API: request report form submissions
     const requestApi = new sst.aws.Function("RequestReport", {
       handler: "api/request-report.handler",
-      url: true,
+      url: {
+        authorization: "none", // Allow public access for form submissions
+        cors: true, // Enable CORS with default settings
+      },
       link: [submissions],
       environment: {
         SUBMISSIONS_BUCKET: submissions.name,
