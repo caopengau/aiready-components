@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import Breadcrumb from "../../components/Breadcrumb";
 
 const tools = [
   {
@@ -181,6 +182,11 @@ export default function DocsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
+              <Breadcrumb items={[
+                { label: "Home", href: "/" },
+                { label: "Documentation", href: "/docs" }
+              ]} />
+              
               <h1 className="text-5xl font-black text-slate-900 mb-4">
                 Documentation
               </h1>

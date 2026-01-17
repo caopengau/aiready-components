@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import Script from 'next/script'
 import RequestForm from '../components/RequestForm'
 import AnimatedHero from '../components/AnimatedHero'
 import AnimatedStats from '../components/AnimatedStats'
@@ -13,8 +14,52 @@ import FloatingElements from '../components/FloatingElements'
 import ParallaxSection from '../components/ParallaxSection'
 
 export default function HomePage() {
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is aiready really free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! All our tools are free and open source. You can run them locally with npx @aiready/cli scan . or request a free audit report above."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What languages do you support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Currently TypeScript/JavaScript, with Python and Java support coming soon. Our tools work with any codebase that has AST parsing available."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does this help with AI coding assistants?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "AI models work better with clean, consistent code. Our tools eliminate semantic duplicates, optimize context windows, and ensure naming consistency that AI models can better understand and work with."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I contribute to the project?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Absolutely! AIReady is open source on GitHub. We welcome contributions, bug reports, and feature requests. Check out our contributing guidelines."
+        }
+      }
+    ]
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 overflow-hidden">
+      <Script
+        id="faq-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <FloatingElements />
       
       {/* Header */}
