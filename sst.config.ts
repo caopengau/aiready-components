@@ -14,6 +14,14 @@ export default $config({
       public: false,
     });
 
+    // SES Email Domain Identity with DKIM
+    const emailDomain = new sst.aws.Email("NotificationEmail", {
+      sender: "getaiready.dev",
+      dns: sst.cloudflare.dns({
+        zone: "50eb7dcadc84c58ab34583742db0b671",
+      }),
+    });
+
     // API Gateway HTTP API for public form submissions
     const api = new sst.aws.ApiGatewayV2("RequestApi", {
       cors: true,
@@ -56,6 +64,7 @@ export default $config({
       site: site.url,
       apiUrl: api.url,
       submissionsBucket: submissions.name,
+      emailDomain: emailDomain.sender,
     };
   },
 });
