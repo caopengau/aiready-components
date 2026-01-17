@@ -128,7 +128,7 @@ export default function DocsPage() {
               Home
             </Link>
             <Link 
-              href="https://github.com/caopengau/aiready" 
+              href="https://github.com/caopengau/aiready-landing" 
               target="_blank"
               className="text-slate-600 hover:text-slate-900 transition-colors"
             >
@@ -352,19 +352,27 @@ export default function DocsPage() {
             <h2 className="text-4xl font-black text-slate-900 mb-6">Contributing</h2>
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-8">
               <p className="text-slate-700 mb-4">
-                We welcome contributions! AIReady is open source and available on GitHub.
+                We welcome contributions! AIReady is open source and available on GitHub. Star our landing page or report issues for any of our tools.
               </p>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 <Link
-                  href="https://github.com/caopengau/aiready"
+                  href="https://github.com/caopengau/aiready-landing"
                   target="_blank"
                   className="inline-flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-slate-800 transition-colors"
                 >
                   <span>⭐</span>
-                  Star on GitHub
+                  Star Landing Page
                 </Link>
                 <Link
-                  href="https://github.com/caopengau/aiready/issues"
+                  href="https://github.com/caopengau/aiready-cli"
+                  target="_blank"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
+                >
+                  <span>⭐</span>
+                  Star CLI Tool
+                </Link>
+                <Link
+                  href="https://github.com/caopengau/aiready-landing/issues"
                   target="_blank"
                   className="inline-flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-xl font-semibold border border-slate-300 hover:bg-slate-50 transition-colors"
                 >
@@ -385,7 +393,7 @@ export default function DocsPage() {
             <p className="mt-2">
               <Link href="/" className="hover:text-slate-900">Home</Link>
               {" • "}
-              <Link href="https://github.com/caopengau/aiready" target="_blank" className="hover:text-slate-900">GitHub</Link>
+              <Link href="https://github.com/caopengau/aiready-landing" target="_blank" className="hover:text-slate-900">GitHub</Link>
               {" • "}
               <Link href="https://www.npmjs.com/package/@aiready/cli" target="_blank" className="hover:text-slate-900">NPM</Link>
             </p>
