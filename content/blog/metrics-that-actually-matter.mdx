@@ -87,4 +87,4 @@ npx @aiready/context-analyzer ./src
 
 ---
 
-*Peng Cao is the founder of [receiptclaimer](https://receiptclaimer.com) and creator of [aiready](https://github.com/caopengau/aiready), an open-source suite for measuring and optimizing codebases for AI adoption.*
+*Peng Cao is the founder of [receiptclaimer](https://receiptclaimer.com) and creator of [aiready](https://github.com/caopengau/aiready-cli), an open-source suite for measuring and optimizing codebases for AI adoption.*
