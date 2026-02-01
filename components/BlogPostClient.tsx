@@ -6,6 +6,7 @@ import MotionProgress from './MotionProgress';
 import Link from "next/link";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
+import { Comments } from "./Comments";
 
 interface BlogPost {
   title: string;
@@ -157,6 +158,9 @@ export function BlogPostClient({ post, content }: { post: BlogPost; content: Rea
               </Link>
             </div>
           </footer>
+
+          {/* Comments Section */}
+          <Comments slug={post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')} title={post.title} />
         </article>
       </main>
       <Footer />
