@@ -1,0 +1,64 @@
+{
+  "name": "@aiready/components",
+  "version": "0.1.0",
+  "description": "Unified shared components library (UI, charts, hooks, utilities) for AIReady",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./button": "./dist/components/button.js",
+    "./card": "./dist/components/card.js",
+    "./input": "./dist/components/input.js",
+    "./label": "./dist/components/label.js",
+    "./badge": "./dist/components/badge.js",
+    "./tailwind-config": "./tailwind.config.js"
+  },
+  "files": [
+    "dist",
+    "tailwind.config.js",
+    "src"
+  ],
+  "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [
+    "aiready",
+    "components",
+    "ui",
+    "react",
+    "charts",
+    "d3",
+    "tailwindcss"
+  ],
+  "author": "Peng Cao <caopengau@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/caopengau/aiready-components.git"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@aiready/core": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.6",
+    "@types/react-dom": "^19.0.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/jest-dom": "^6.6.5",
+    "tailwindcss": "^4.1.14",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
