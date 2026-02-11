@@ -229,18 +229,29 @@ export function useForceSimulation(
 
     simulationRef.current = simulation;
 
-    // Update state on each tick
-    simulation.on('tick', () => {
+    // Update state on each tick. Batch updates via requestAnimationFrame to avoid
+    // excessive React re-renders which can cause visual flicker.
+    let rafId: number | null = null;
+    const tickHandler = () => {
       try {
         if (typeof onTick === 'function') onTick(nodesCopy, linksCopy, simulation);
       } catch (e) {
         // ignore user tick errors
       }
-      setNodes([...nodesCopy]);
-      setLinks([...linksCopy]);
-      setAlpha(simulation.alpha());
-      setIsRunning(simulation.alpha() > simulation.alphaMin());
-    });
+
+      // schedule a single RAF update per animation frame
+      if (rafId == null) {
+        rafId = (globalThis.requestAnimationFrame || ((cb: FrameRequestCallback) => setTimeout(cb, 16)))(() => {
+          rafId = null;
+          setNodes([...nodesCopy]);
+          setLinks([...linksCopy]);
+          setAlpha(simulation.alpha());
+          setIsRunning(simulation.alpha() > simulation.alphaMin());
+        }) as unknown as number;
+      }
+    };
+
+    simulation.on('tick', tickHandler);
 
     simulation.on('end', () => {
       setIsRunning(false);
@@ -248,6 +259,13 @@ export function useForceSimulation(
 
     // Cleanup on unmount
     return () => {
+      try {
+        simulation.on('tick', null as any);
+      } catch (e) {}
+      if (rafId != null) {
+        try { (globalThis.cancelAnimationFrame || ((id: number) => clearTimeout(id)))(rafId); } catch (e) {}
+        rafId = null;
+      }
       simulation.stop();
     };
   }, [
