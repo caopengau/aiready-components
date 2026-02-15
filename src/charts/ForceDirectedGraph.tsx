@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import * as d3 from 'd3';
-import { useForceSimulation, type SimulationNode, type SimulationLink, type ForceSimulationOptions } from '../hooks/useForceSimulation';
 import { cn } from '../utils/cn';
 import NodeItem from './NodeItem';
 import LinkItem from './LinkItem';
 
-export interface GraphNode extends SimulationNode {
+export interface GraphNode {
   id: string;
   label?: string;
   color?: string;
@@ -13,13 +12,22 @@ export interface GraphNode extends SimulationNode {
   group?: string;
   kind?: 'file' | 'package';
   packageGroup?: string;
+  x?: number;
+  y?: number;
+  fx?: number | null;
+  fy?: number | null;
 }
 
-export interface GraphLink extends SimulationLink {
+export interface GraphLink {
+  source: string | GraphNode;
+  target: string | GraphNode;
   color?: string;
   width?: number;
   label?: string;
+  type?: string;
 }
+
+export type LayoutType = 'force' | 'hierarchical' | 'circular';
 
 export interface ForceDirectedGraphHandle {
   pinAll: () => void;
@@ -28,6 +36,8 @@ export interface ForceDirectedGraphHandle {
   fitView: () => void;
   getPinnedNodes: () => string[];
   setDragMode: (enabled: boolean) => void;
+  setLayout: (layout: LayoutType) => void;
+  getLayout: () => LayoutType;
 }
 
 export interface ForceDirectedGraphProps {
@@ -35,7 +45,6 @@ export interface ForceDirectedGraphProps {
   links: GraphLink[];
   width: number;
   height: number;
-  simulationOptions?: Partial<ForceSimulationOptions>;
   enableZoom?: boolean;
   enableDrag?: boolean;
   onNodeClick?: (node: GraphNode) => void;
@@ -53,7 +62,9 @@ export interface ForceDirectedGraphProps {
   manualLayout?: boolean;
   onManualLayoutChange?: (enabled: boolean) => void;
   packageBounds?: Record<string, { x: number; y: number; r: number }>;
-  }
+  layout?: LayoutType;
+  onLayoutChange?: (layout: LayoutType) => void;
+}
 
 export const ForceDirectedGraph = forwardRef<ForceDirectedGraphHandle, ForceDirectedGraphProps>(
   (
@@ -62,7 +73,6 @@ export const ForceDirectedGraph = forwardRef<ForceDirectedGraphHandle, ForceDire
       links: initialLinks,
       width,
       height,
-      simulationOptions,
       enableZoom = true,
       enableDrag = true,
       onNodeClick,
@@ -80,6 +90,8 @@ export const ForceDirectedGraph = forwardRef<ForceDirectedGraphHandle, ForceDire
       manualLayout = false,
       onManualLayoutChange,
       packageBounds,
+      layout: externalLayout,
+      onLayoutChange,
     },
     ref
   ) => {
@@ -91,244 +103,140 @@ export const ForceDirectedGraph = forwardRef<ForceDirectedGraphHandle, ForceDire
   const dragActiveRef = useRef(false);
   const [pinnedNodes, setPinnedNodes] = useState<Set<string>>(new Set());
   const internalDragEnabledRef = useRef(enableDrag);
+  const [layout, setLayout] = useState<LayoutType>(externalLayout || 'force');
+  
+  // Sync external layout prop with internal state
+  useEffect(() => {
+    if (externalLayout && externalLayout !== layout) {
+      setLayout(externalLayout);
+    }
+  }, [externalLayout]);
+
+  // Handle layout change and notify parent
+  const handleLayoutChange = useCallback((newLayout: LayoutType) => {
+    setLayout(newLayout);
+    onLayoutChange?.(newLayout);
+  }, [onLayoutChange]);
 
   // Update the ref when enableDrag prop changes
   useEffect(() => {
     internalDragEnabledRef.current = enableDrag;
   }, [enableDrag]);
 
-  // Initialize simulation - let React handle rendering based on node positions
-  const onTick = (_nodesCopy: any[], _linksCopy: any[], _sim: any) => {
-    // If package bounds are provided, gently pull file nodes toward their
-    // package center to create meaningful clusters.
-    try {
-      const boundsToUse = clusterBounds?.bounds ?? packageBounds;
-      const nodeClusterMap = clusterBounds?.nodeToCluster ?? {};
-      if (boundsToUse) {
-        Object.values(nodesById).forEach((n) => {
-          if (!n) return;
-          // Prefer explicit `group`, but fall back to `packageGroup` which is
-          // provided by the visualizer data. This ensures file nodes are
-          // pulled toward their package center (pkg:<name>) as intended.
-          const group = (n as any).group ?? (n as any).packageGroup as string | undefined;
-          const clusterKey = nodeClusterMap[n.id];
-          const key = clusterKey ?? (group ? `pkg:${group}` : undefined);
-          if (!key) return;
-          const center = (boundsToUse as any)[key];
-          if (!center) return;
-          const dx = center.x - (n.x ?? 0);
-          const dy = center.y - (n.y ?? 0);
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          // Much stronger pull so nodes reliably settle inside cluster areas
-          const pullStrength = Math.min(0.5, 0.15 * (dist / (center.r || 200)) + 0.06);
-          if (!isNaN(pullStrength) && isFinite(pullStrength)) {
-            n.vx = (n.vx ?? 0) + (dx / (dist || 1)) * pullStrength;
-            n.vy = (n.vy ?? 0) + (dy / (dist || 1)) * pullStrength;
-          }
-          // If outside cluster radius, apply a stronger inward correction scaled to excess
-          if (center.r && dist > center.r) {
-            const excess = (dist - center.r) / (dist || 1);
-            n.vx = (n.vx ?? 0) - dx * 0.02 * excess;
-            n.vy = (n.vy ?? 0) - dy * 0.02 * excess;
-          }
-        });
-      }
-    } catch (e) {
-      // ignore grouping errors
+
+  // Static layout - compute positions directly without force simulation
+  const nodes = React.useMemo(() => {
+    if (!initialNodes || !initialNodes.length) return initialNodes;
+    
+    const cx = width / 2;
+    const cy = height / 2;
+    
+    // For force layout, use random positions but don't animate
+    if (layout === 'force') {
+      return initialNodes.map((n: any) => ({
+        ...n,
+        x: Math.random() * width,
+        y: Math.random() * height,
+      }));
     }
-
-    // No DOM updates needed - React will re-render based on nodes state from useForceSimulation
-    // The useForceSimulation hook already calls setNodes on each tick (throttled)
-    // React components (NodeItem, LinkItem) will use node.x, node.y from the nodes state
-  };
-
-  // main simulation is created after seeding below (so seededNodes can be used)
-
-  // --- Two-phase hierarchical layout: Phase A (package centers) + Phase B (local layouts)
-  // Compute package areas and per-node local positions, then seed the main simulation.
-  const { packageAreas, localPositions } = React.useMemo(() => {
-    try {
-      if (!initialNodes || !initialNodes.length) return { packageAreas: {}, localPositions: {} };
-      // Group nodes by package/group key
-      const groups = new Map<string, any[]>();
-      initialNodes.forEach((n: any) => {
-        const key = n.packageGroup || n.group || 'root';
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)!.push(n);
-      });
-
-      const groupKeys = Array.from(groups.keys());
-      // Build pack layout for package centers
-      const children = groupKeys.map((k) => ({ name: k, value: Math.max(1, groups.get(k)!.length) }));
-      const root: any = d3.hierarchy({ children } as any);
-      root.sum((d: any) => d.value);
-      const pack: any = d3.pack().size([width, height]).padding(Math.max(20, Math.min(width, height) * 0.03));
-      const packed: any = pack(root);
-      const packageAreas: Record<string, { x: number; y: number; r: number }> = {};
-      if (packed.children) {
-        packed.children.forEach((c: any) => {
-          const name = c.data.name;
-          packageAreas[name] = { x: c.x, y: c.y, r: Math.max(40, c.r) };
-        });
-      }
-
-      // For each package, run a short local force simulation offscreen to compute local positions
-      const localPositions: Record<string, { x: number; y: number }> = {};
-      groups.forEach((nodesInGroup, _key) => {
-        if (!nodesInGroup || nodesInGroup.length === 0) return;
-        // create shallow copies for the local sim
-        const localNodes = nodesInGroup.map((n: any) => ({ id: n.id, x: Math.random() * 10 - 5, y: Math.random() * 10 - 5, size: n.size || 10 }));
-        // links restricted to intra-package
-        const localLinks = (initialLinks || []).filter((l: any) => {
-          const s = typeof l.source === 'string' ? l.source : (l.source && l.source.id);
-          const t = typeof l.target === 'string' ? l.target : (l.target && l.target.id);
-          return localNodes.some((ln: any) => ln.id === s) && localNodes.some((ln: any) => ln.id === t);
-        }).map((l: any) => ({ source: typeof l.source === 'string' ? l.source : l.source.id, target: typeof l.target === 'string' ? l.target : l.target.id }));
-
-        if (localNodes.length === 1) {
-          localPositions[localNodes[0].id] = { x: 0, y: 0 };
-          return;
-        }
-
-        const sim = d3.forceSimulation(localNodes as any)
-          .force('link', d3.forceLink(localLinks as any).id((d: any) => d.id).distance(30).strength(0.8))
-          .force('charge', d3.forceManyBody().strength(-15))
-          .force('collide', d3.forceCollide((d: any) => (d.size || 10) + 6).iterations(2))
-          .stop();
-
-        // Run several synchronous ticks to settle local layout
-        const ticks = 300;
-        for (let i = 0; i < ticks; i++) sim.tick();
-
-        localNodes.forEach((ln: any) => {
-          localPositions[ln.id] = { x: ln.x ?? 0, y: ln.y ?? 0 };
-        });
-      });
-
-      return { packageAreas, localPositions };
-    } catch (e) {
-      return { packageAreas: {}, localPositions: {} };
+    
+    // For circular layout, arrange in a circle
+    if (layout === 'circular') {
+      const radius = Math.min(width, height) * 0.35;
+      return initialNodes.map((n: any, i: number) => ({
+        ...n,
+        x: cx + Math.cos((2 * Math.PI * i) / initialNodes.length) * radius,
+        y: cy + Math.sin((2 * Math.PI * i) / initialNodes.length) * radius,
+      }));
     }
-  }, [initialNodes, initialLinks, width, height]);
+    
+    // For hierarchical layout, arrange in a grid
+    if (layout === 'hierarchical') {
+      const cols = Math.ceil(Math.sqrt(initialNodes.length));
+      const spacingX = width / (cols + 1);
+      const spacingY = height / (Math.ceil(initialNodes.length / cols) + 1);
+      return initialNodes.map((n: any, i: number) => ({
+        ...n,
+        x: spacingX * ((i % cols) + 1),
+        y: spacingY * (Math.floor(i / cols) + 1),
+      }));
+    }
+    
+    return initialNodes;
+  }, [initialNodes, width, height, layout]);
 
-  // Seed main simulation nodes with package-local coordinates mapped into package areas
-  const seededNodes = React.useMemo(() => {
-    if (!initialNodes || !Object.keys(packageAreas || {}).length) return initialNodes;
-    return initialNodes.map((n: any) => {
-      const key = n.packageGroup || n.group || 'root';
-      const area = packageAreas[key];
-      const lp = localPositions[n.id];
-      if (!area || !lp) return n;
-      // scale local layout to fit inside package radius
-      const scale = Math.max(0.5, (area.r * 0.6) / (Math.max(1, Math.sqrt(lp.x * lp.x + lp.y * lp.y)) || 1));
-      return { ...n, x: area.x + lp.x * scale, y: area.y + lp.y * scale };
-    });
-  }, [initialNodes, packageAreas, localPositions]);
+  // Static links - just use initial links
+  const links = initialLinks;
+  
+  // No force simulation - static layout only
+  const restart = React.useCallback(() => {
+    // No-op for static layout
+  }, []);
+  
+  const stop = React.useCallback(() => {
+    // No-op for static layout
+  }, []);
+  
+  const setForcesEnabled = React.useCallback((_enabled: boolean) => {
+    // No-op for static layout
+  }, []);
 
+  // Remove package bounds effect - boundary packing disabled for faster convergence
 
-  // Compute dependency-based clusters (connected components on dependency links)
-  // create the main force simulation using seeded nodes
-  const { nodes, links, restart, stop, setForcesEnabled } = useForceSimulation(seededNodes || initialNodes, initialLinks, {
-    width,
-    height,
-    chargeStrength: manualLayout ? 0 : undefined,
-    onTick,
-    ...simulationOptions,
-  });
-
-  // Helper map id -> node for quick lookup in onTick
-  const nodesById = React.useMemo(() => {
-    const m: Record<string, any> = {};
-    (nodes || []).forEach((n: any) => {
-      if (n && n.id) m[n.id] = n;
-    });
-    return m;
-  }, [nodes]);
-
-  const clusterBounds = React.useMemo(() => {
-    try {
-      if (!links || !nodes) return null;
-      const nodeIds = new Set(nodes.map((n) => n.id));
-      const adj = new Map<string, Set<string>>();
-      nodes.forEach((n) => adj.set(n.id, new Set()));
-      links.forEach((l: any) => {
-        const type = l.type || 'reference';
-        if (type !== 'dependency') return;
-        const s = typeof l.source === 'string' ? l.source : (l.source && l.source.id) || null;
-        const t = typeof l.target === 'string' ? l.target : (l.target && l.target.id) || null;
-        if (!s || !t) return;
-        if (!nodeIds.has(s) || !nodeIds.has(t)) return;
-        adj.get(s)?.add(t);
-        adj.get(t)?.add(s);
-      });
-
-      const visited = new Set<string>();
-      const comps: Array<string[]> = [];
-      for (const nid of nodeIds) {
-        if (visited.has(nid)) continue;
-        const stack = [nid];
-        const comp: string[] = [];
-        visited.add(nid);
-        while (stack.length) {
-          const cur = stack.pop()!;
-          comp.push(cur);
-          const neigh = adj.get(cur);
-          if (!neigh) continue;
-          for (const nb of neigh) {
-            if (!visited.has(nb)) {
-              visited.add(nb);
-              stack.push(nb);
-            }
-          }
-        }
-        comps.push(comp);
-      }
-
-      if (comps.length <= 1) return null;
-
-      // Increase spread: scale the packing area slightly larger than viewport,
-      // give more padding between clusters, and bias radii upward so nodes
-      // have more room to sit inside cluster circles.
-      const children = comps.map((c, i) => ({ name: String(i), value: Math.max(1, c.length) }));
-      d3.hierarchy({ children } as any).sum((d: any) => d.value).sort((a: any, b: any) => b.value - a.value);
-      // Use a radial layout to guarantee very large separation between clusters.
-      // Place cluster centers on a circle around the viewport center with a
-      // radius scaled aggressively by viewport size and cluster count.
-      const num = comps.length;
+  // Apply layout-specific positioning when layout changes
+  useEffect(() => {
+    if (!nodes || nodes.length === 0) return;
+    
+    const applyLayout = () => {
       const cx = width / 2;
       const cy = height / 2;
-      // Circle radius grows with viewport and number of clusters to force separation
-      const base = Math.max(width, height);
-      // Make cluster circle radius extremely large so clusters are very far apart.
-      // Scale with number of clusters to avoid crowding; multiply heavily for drastic separation.
-      const circleRadius = base * Math.max(30, num * 20, Math.sqrt(num) * 12);
-      const map: Record<string, { x: number; y: number; r: number }> = {};
-      comps.forEach((c, i) => {
-        const angle = (2 * Math.PI * i) / num;
-        const x = cx + Math.cos(angle) * circleRadius;
-        const y = cy + Math.sin(angle) * circleRadius;
-        const sizeBias = Math.sqrt(Math.max(1, c.length));
-        const r = Math.max(200, 100 * sizeBias);
-        map[`cluster:${i}`] = { x, y, r };
-      });
-      // Map node id -> cluster id center
-      const nodeToCluster: Record<string, string> = {};
-      comps.forEach((c, i) => c.forEach((nid) => (nodeToCluster[nid] = `cluster:${i}`)));
-      return { bounds: map, nodeToCluster };
-    } catch (e) {
-      return null;
-    }
-  }, [nodes, links, width, height]);
-
-  // If package or cluster bounds are provided, recreate the simulation so onTick gets the latest bounds
-  useEffect(() => {
-    if (!packageBounds && !clusterBounds && (!packageAreas || Object.keys(packageAreas).length === 0)) return;
-    try {
-      restart();
-    } catch (e) {
-      // ignore
-    }
-  }, [packageBounds, clusterBounds, packageAreas, restart]);
+      
+      if (layout === 'circular') {
+        // Place all nodes in a circle
+        const radius = Math.min(width, height) * 0.35;
+        nodes.forEach((node, i) => {
+          const angle = (2 * Math.PI * i) / nodes.length;
+          node.fx = cx + Math.cos(angle) * radius;
+          node.fy = cy + Math.sin(angle) * radius;
+        });
+      } else if (layout === 'hierarchical') {
+        // Place packages in rows, files within packages in columns
+        const groups = new Map<string, typeof nodes>();
+        nodes.forEach((n: any) => {
+          const key = n.packageGroup || n.group || 'root';
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key)!.push(n);
+        });
+        
+        const groupArray = Array.from(groups.entries());
+        const cols = Math.ceil(Math.sqrt(groupArray.length));
+        const groupSpacingX = width * 0.8 / cols;
+        const groupSpacingY = height * 0.8 / Math.ceil(groupArray.length / cols);
+        
+        groupArray.forEach(([groupKey, groupNodes], gi) => {
+          const col = gi % cols;
+          const row = Math.floor(gi / cols);
+          const groupX = (col + 0.5) * groupSpacingX;
+          const groupY = (row + 0.5) * groupSpacingY;
+          
+          // Place group nodes in a small circle within their area
+          if (groupKey.startsWith('pkg:') || groupKey === groupKey) {
+            groupNodes.forEach((n, ni) => {
+              const angle = (2 * Math.PI * ni) / groupNodes.length;
+              const r = Math.min(80, 20 + groupNodes.length * 8);
+              n.fx = groupX + Math.cos(angle) * r;
+              n.fy = groupY + Math.sin(angle) * r;
+            });
+          }
+        });
+      }
+      // 'force' layout - just restart with default behavior (no fx/fy set)
+      
+      try { restart(); } catch (e) { /* ignore */ }
+    };
+    
+    applyLayout();
+  }, [layout, nodes, width, height, restart]);
 
   // If manual layout is enabled or any nodes are pinned, disable forces
   useEffect(() => {
@@ -418,8 +326,14 @@ export const ForceDirectedGraph = forwardRef<ForceDirectedGraphHandle, ForceDire
       setDragMode: (enabled: boolean) => {
         internalDragEnabledRef.current = enabled;
       },
+      
+      setLayout: (newLayout: LayoutType) => {
+        handleLayoutChange(newLayout);
+      },
+      
+      getLayout: () => layout,
     }),
-    [nodes, pinnedNodes, restart, width, height]
+    [nodes, pinnedNodes, restart, width, height, layout, handleLayoutChange]
   );
 
   // Notify parent when manual layout mode changes (uses the prop so it's not unused)

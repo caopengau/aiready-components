@@ -48,6 +48,8 @@ export {
   type GraphNode,
   type GraphLink,
   type ForceDirectedGraphProps,
+  type ForceDirectedGraphHandle,
+  type LayoutType,
 } from './charts/ForceDirectedGraph';
 export {
   GraphControls,
